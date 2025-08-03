@@ -1,0 +1,58 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+ENV/
+.venv/
+.ENV/
+
+# macOS system files
+.DS_Store
+
+# VS Code settings
+.vscode/
+
+# PyCharm settings
+.idea/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Logs and debug files
+*.log
+
+# Python packaging artifacts
+build/
+dist/
+*.egg-info/
+
+# SQLite database
+*.sqlite3
+
+# Secret or config files
+*.env
+.env.*
+secrets.json
+config.yaml
+
+# Cache or coverage
+.cache/
+coverage/
+*.cover
+*.py,cover
+htmlcov/
+
+# Unit test / test suite results
+test-results/
+*.pytest_cache/
+
+# MyPy and Pyright
+.mypy_cache/
+.pyright/
+
+# Pydantic compiled schemas
+__pydantic_model_cache__/
