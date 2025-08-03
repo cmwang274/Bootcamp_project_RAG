@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 import tiktoken
 import time
+import re
 
 load_dotenv('.env')
 
@@ -23,7 +24,7 @@ from content.driver import download_drive_files, build_rag_tool_from_files
 #this is the google drive - https://drive.google.com/drive/folders/13BJY5qfprzXXK_MGnN06Jz_KWnJqOZZz
 #this is the json file downloaded from google cloud
 FOLDER_ID = "1B8fvzo_LiLbXDp3Y2vq8yWHOOH_V-BD-"
-SERVICE_ACCOUNT_PATH = "ai-bootcamp-lcj-f197298025cb.json"
+SERVICE_ACCOUNT_PATH = "AI_project.json"
 
 # Step 1: Download files
 downloaded_files = download_drive_files(FOLDER_ID, SERVICE_ACCOUNT_PATH)
@@ -39,7 +40,7 @@ exa_search_tool = EXASearchTool()
 #Agent 1: A friend/listening ear to talk to
 agent_companion = Agent(
     role="Listening Companion",
-    goal="Be a supportive and understanding friend who listens to workplace struggles. Understand and internalise the underlying workplace struggles when being asked by the affected party the follwing: {topic}, based on web live content and resources under RAG tools.",
+    goal="Be a supportive and understanding friend who listens to workplace struggles. Tailor your response to the user's specific situation, role, and details from their query. Always base your advice and examples on the user's input topic: {topic}. Reference the most relevant resources from RAG tools and avoid generic advice. Use a tone that matches the user's needs (e.g., supportive, empathetic). Only reply if the user's input is relevant to emotional support; otherwise, do not reply.",
     backstory="""You're a thoughtful and empathetic listener, always ready to lend a virtual ear.
     You don’t judge — you just help people feel heard and understood when work gets overwhelming.""",
     #tools=[wellness_tool],
@@ -51,7 +52,7 @@ agent_companion = Agent(
 #Agent 2: Planner
 agent_planner = Agent(
     role="Stress Relief Planner",
-    goal="Create actionable, short-term and long-term plans or provide perspectives and tips to reduce workplace stress that are resulted from the underlying workplace struggle when being asked by the affected party the following: {topic}, based on web live content and resources under RAG tools..",
+    goal="Create actionable, short-term and long-term plans or provide perspectives and tips to reduce workplace stress, tailored to the user's specific challenges, role, and context. Use details from the user's query and always base your suggestions on the user's input topic: {topic}. Reference the most relevant resources from RAG tools. Avoid generic suggestions and write in a practical, encouraging style. Only reply if the user's input is relevant to planning or stress relief; otherwise, do not reply.",
     backstory="""You're a productivity and wellness planner who breaks stressors into manageable tasks,
     and suggests realistic and practical routines and positively affect the affected party to help them regain control either physical, emotionally or mentally.""",
     #tools=[wellness_tool],
@@ -63,9 +64,7 @@ agent_planner = Agent(
 #Agent 3: Ally/Mentor
 agent_mentor = Agent(
     role="Supportive Mentor",
-    goal="Offer guidance on how to help a colleague who may be in distress or struggling mentally, when being asked by the affected party the " \
-    "following: {topic}, and only offer this guidance if the affected party is a mentor seeking help on how to help his or her colleagues. " \
-    "The guidance given should be based on web live content and resources under RAG tools.",
+    goal="Offer guidance on how to help a colleague who may be in distress or struggling mentally, tailored to the mentor's specific situation and the details provided. Only offer this guidance if the affected party is a mentor seeking help. Always base your guidance on the user's input topic: {topic}. Reference the most relevant resources from RAG tools and avoid generic advice. Use a tone that is experienced and supportive. Only reply if the user's input is relevant to mentoring or allyship; otherwise, do not reply.",
     backstory="""You're a extremely experienced workplace mentor who advises others on how to be a good ally in emotionally sensitive situations. 
     You have helped many colleagues, peers or subordinates to overcome their mental wellness challenges.""",
     #tools=[wellness_tool],
@@ -77,8 +76,7 @@ agent_mentor = Agent(
 #Agent 4: Guides and Resources
 agent_resource = Agent(
     role="Resource Scout",
-    goal="Find useful guides, articles, and tips related to workplace wellness, mental health, and stress management to reduce workplace stress " \
-    "that are resulted from the underlying workplace struggle when being asked by the affected party the following: {topic}, based on web live content and resources under RAG tools.",
+    goal="Find useful guides, articles, and tips related to workplace wellness, mental health, and stress management, tailored to the user's specific needs and context. Use details from the user's query and always base your recommendations on the user's input topic: {topic}. Reference the most relevant resources from RAG tools. Avoid generic or irrelevant links, and write in a practical, resourceful style. Only reply if the user's input is relevant to resources or guides; otherwise, do not reply.",
     backstory="""You’re a proactive and reliable guide-finder. When someone is struggling or curious about how to improve their mental wellness,
     you find reputable sources and practical guides that can help them to overcome their mental wellness challenges or at least change their perspectives more positively""",
     #tools=[wellness_tool],
@@ -97,36 +95,32 @@ agent_coordinator = Agent(
 ###Tasks
 
 task_companion = Task(
-    description="Offer empathetic support and simple advice for someone feeling burnt out or has some mental wellness challenges.",
-    expected_output="In addition to other responses from other agents, begin with a few supportive messages acknowledging their feelings and a few gentle" \
-    " coping suggestions to cope with workplace stress that are resulted from the underlying workplace struggle when being asked by the affected party the following: {topic}",
+    description="Offer empathetic support and simple advice for someone feeling burnt out or has some mental wellness challenges. Always base your support and advice on the user's input topic: {topic}.",
+    expected_output="In addition to other responses from other agents, begin with a few supportive messages acknowledging their feelings and a few gentle coping suggestions to cope with workplace stress that are resulted from the underlying workplace struggle when being asked by the affected party the following: {topic}",
     agent=agent_companion,
 )
 
 task_planner = Task(
-    description="Create a step-by-step plan to help someone organise their workweek to reduce stress or their mental wellness challenges",
-    expected_output="In addition to other responses from other agents, begin in a new paragraph to include a practical, clear, easy-to-follow plan with healthy habits, breaks, and boundary-setting" \
-    " ideas,to reduce workplace stress that are resulted from the underlying workplace struggle when being asked by the affected party the following: {topic}.",
+    description="Create a step-by-step plan to help someone organise their workweek to reduce stress or their mental wellness challenges. Always base your plan on the user's input topic: {topic}.",
+    expected_output="In addition to other responses from other agents, begin in a new paragraph to include a practical, clear, easy-to-follow plan with healthy habits, breaks, and boundary-setting ideas,to reduce workplace stress that are resulted from the underlying workplace struggle when being asked by the affected party the following: {topic}.",
     agent=agent_planner,
 )
 
 task_mentor = Task(
-    description="Suggest kind, appropriate ways to support a colleague who may be overwhelmed or has some mental wellness challenges",
-    expected_output="In addition to other responses from other agents, begin in a new paragraph to include tips on how to approach, listen, and offer help to someone struggling or has some" \
-    " mental wellness challenges, workplace stress that are resulted from the underlying workplace struggle when being asked by the affected party the following: {topic}.",
+    description="Suggest kind, appropriate ways to support a colleague who may be overwhelmed or has some mental wellness challenges. Always base your suggestions on the user's input topic: {topic}.",
+    expected_output="In addition to other responses from other agents, begin in a new paragraph to include tips on how to approach, listen, and offer help to someone struggling or has some mental wellness challenges, workplace stress that are resulted from the underlying workplace struggle when being asked by the affected party the following: {topic}.",
     agent=agent_mentor,
 )
 
 task_resource = Task(
-    description="Look up trustworthy resources not just from related to managing workplace stress or burnout",
-    expected_output="In addition to other responses from other agents, begin in a new paragraph to include not more than 2 useful links or summaries of guides that can help the user take practical steps," \
-    " to reduce workplace stress that are resulted from the underlying workplace struggle when being asked by the affected party the following: {topic}.",
+    description="Look up trustworthy resources not just from related to managing workplace stress or burnout. Always base your recommendations on the user's input topic: {topic}.",
+    expected_output="In addition to other responses from other agents, begin in a new paragraph to include not more than 2 useful links or summaries of guides that can help the user take practical steps, to reduce workplace stress that are resulted from the underlying workplace struggle when being asked by the affected party the following: {topic}.",
     agent=agent_resource,
 )
 
 task_coordinator = Task(
     description="Combine the insights from emotional support, planning steps, mentoring tips, and trusted resources into one final output.",
-    expected_output="A summarised version of a cohesive answer that weaves together emotional empathy, actionable plan, handy tips, and resource links. The answer should be within 300 word count.",
+    expected_output="A summarised version of a cohesive answer that weaves together emotional empathy, actionable plan, handy tips, and resource links. Structure the answer into clear sections with headings: 'Emotional Support', 'Actionable Plan', 'Mentoring Tips', and 'Recommended Resources'. The answer should be within 300 word count.",
     agent=agent_coordinator,
     context=[task_companion, task_planner, task_mentor, task_resource],
 )
@@ -134,13 +128,68 @@ task_coordinator = Task(
 crew = Crew(
     agents=[agent_companion, agent_planner, agent_mentor, agent_resource, agent_coordinator],
     tasks=[task_companion, task_planner, task_mentor, task_resource, task_coordinator],
-    verbose=True
+    verbose=False,  # Set verbose to False for faster execution
+    concurrent=True  # Enable concurrent execution of agents/tasks
 )
+
+def get_relevant_agents_and_tasks(user_input):
+    agents = []
+    tasks = []
+    input_lower = user_input.lower()
+    # Use sets of keywords/phrases for each agent
+    companion_keywords = [
+        "listen", "support", "feel", "emotion", "burnt out", "overwhelm", "talk", "vent", "stressed", "anxious", "sad", "frustrated"
+    ]
+    planner_keywords = [
+        "plan", "organize", "routine", "schedule", "workweek", "stress relief", "time management", "productivity", "breaks", "habits", "structure"
+    ]
+    mentor_keywords = [
+        "mentor", "colleague", "ally", "help others", "guidance", "coach", "advice for others", "team", "peer", "subordinate"
+    ]
+    resource_keywords = [
+        "resource", "guide", "article", "link", "tips", "reference", "information", "read", "learn", "material"
+    ]
+    def keyword_match(keywords):
+        return any(re.search(rf"\\b{re.escape(word)}\\b", input_lower) for word in keywords)
+    if keyword_match(companion_keywords):
+        agents.append(agent_companion)
+        tasks.append(task_companion)
+    if keyword_match(planner_keywords):
+        agents.append(agent_planner)
+        tasks.append(task_planner)
+    if keyword_match(mentor_keywords):
+        agents.append(agent_mentor)
+        tasks.append(task_mentor)
+    if keyword_match(resource_keywords):
+        agents.append(agent_resource)
+        tasks.append(task_resource)
+    # If no match, default to companion agent for general support
+    if not agents:
+        agents.append(agent_companion)
+        tasks.append(task_companion)
+    # Always include coordinator
+    agents.append(agent_coordinator)
+    tasks.append(task_coordinator)
+    return agents, tasks
 
 # Streaming response generator using CrewAI
 def response_generator_from_crewai(user_input):
-    output = crew.kickoff(inputs={"topic": user_input})
+    import streamlit as st
+    # Gather chat history
+    history = st.session_state.get("messages", [])
+    # Format history as context string
+    context_str = "\n".join([
+        f"{msg['role'].capitalize()}: {msg['content']}" for msg in history
+    ])
+    agents, tasks = get_relevant_agents_and_tasks(user_input)
+    crew = Crew(
+        agents=agents,
+        tasks=tasks,
+        verbose=False,
+        concurrent=True
+    )
+    output = crew.kickoff(inputs={"topic": user_input, "history": context_str})
     result_text = output.raw  # <-- this is the actual string result
     for word in result_text.split():
         yield word + " "
-        time.sleep(0.05)
+    # No time.sleep

@@ -1,5 +1,6 @@
 import os
 import io
+import concurrent.futures
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from googleapiclient.http import MediaIoBaseDownload
@@ -38,6 +39,12 @@ def download_drive_files(folder_id, service_account_path, output_dir="downloaded
             'application/pdf',
             'text/plain',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document']:
+            continue
+
+        # Skip download if file already exists
+        if os.path.exists(file_path):
+            print(f"[SKIP] Already exists: {file_name}")
+            downloaded_files.append(file_path)
             continue
 
         request = service.files().get_media(fileId=file_id)
@@ -94,43 +101,44 @@ def simple_decode_path(raw_path):
 
 def build_rag_tool_from_files(file_paths):
     rag_tool = RagTool()
-    
-# Loader for Embedchain CUSTOM data
+    # Prepare usable file paths and filter supported types first
+    prepared_files = []
     for raw_path in file_paths:
         absolute_path = os.path.abspath(raw_path)
         usable_path = simple_decode_path(absolute_path)
         ext = os.path.splitext(usable_path)[1].lower()
         source_name = os.path.basename(usable_path)
-
-        # Convert to string if not already
-        if not isinstance(usable_path, str):
-            # If it's bytes, decode to str
-            if isinstance(usable_path, bytes):
-                usable_path = usable_path.decode('utf-8')
-            else:
-            # Fallback: cast to string as string is required for ragtool()
-                usable_path = str(usable_path)
-
         if ext not in [".pdf", ".txt"]:
             print(f"Skipping unsupported file type: {usable_path}")
             continue
+        if not isinstance(usable_path, str):
+            if isinstance(usable_path, bytes):
+                usable_path = usable_path.decode('utf-8')
+            else:
+                usable_path = str(usable_path)
+        prepared_files.append((usable_path, source_name))
 
-        # Extract text manually
-        #text_str = extract_text_from_file(decoded_path)
+    def extract_for_rag(args):
+        usable_path, source_name = args
         print(f"[DEBUG] Adding to RAG: {usable_path} | source={source_name}")
-        
         file_text = extract_text_from_file(usable_path)
-        
         if not file_text.strip():
             print(f"[WARN] Skipping empty file: {usable_path}")
-            continue
+            return None
+        return (file_text, source_name)
 
-    # Add the raw text directly to RAGTool
-        rag_tool.add(
-            file_text,
-            data_type="text",
-            #source=source_name
-        )
-        print(f"[SUCCESS] Added to RAG: {source_name}")
+    # Use ThreadPoolExecutor for concurrent reading
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        results = list(executor.map(extract_for_rag, prepared_files))
+
+    for result in results:
+        if result:
+            file_text, source_name = result
+            rag_tool.add(
+                file_text,
+                data_type="text",
+                #source=source_name
+            )
+            print(f"[SUCCESS] Added to RAG: {source_name}")
 
     return rag_tool
