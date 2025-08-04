@@ -6,10 +6,10 @@ import sys, os, re
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from logics.user_query_handler import response_generator_from_crewai
 
-st.title("StressLess Bot 🧘🏻‍♂️😌🍃 - Your Work Wellness Chatbot")
+st.title("AI-Powered Mental Wellness Companion")
 
 st.markdown("""
-Welcome to the **StressLess Bot**!  
+Welcome to the **StressLess Bot 🧘🏻‍♂️😌🍃 - Your Work Wellness Chatbot**!  
 You can use this chatbot if you are feeling down at work, or if you need guidance on how to approach mental health in the workplace! 
 """)
 
@@ -67,4 +67,5 @@ if prompt := st.chat_input("What is up?"):
     st.session_state.messages.append({"role": "assistant", "content": full_response})
 
     with st.chat_message("assistant"):
+
         display_structured_response(full_response)
