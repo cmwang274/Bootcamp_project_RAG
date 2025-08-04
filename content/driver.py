@@ -8,6 +8,7 @@ from PyPDF2 import PdfReader
 from PyPDF2.errors import PdfReadError
 from docx import Document
 from crewai_tools import RagTool
+import threading
 
 
 def download_drive_files(folder_id, service_account_path, output_dir="downloaded_files"):
@@ -99,7 +100,17 @@ def simple_decode_path(raw_path):
     return decoded_path
 
 
+_rag_tool_cache = {}
+_rag_tool_cache_lock = threading.Lock()
+
+
 def build_rag_tool_from_files(file_paths):
+    # Create a cache key based on file paths and their last modified times
+    cache_key = tuple((os.path.abspath(p), os.path.getmtime(p)) for p in file_paths if os.path.exists(p))
+    with _rag_tool_cache_lock:
+        if cache_key in _rag_tool_cache:
+            print("[CACHE] Returning cached RAG tool.")
+            return _rag_tool_cache[cache_key]
     rag_tool = RagTool()
     # Prepare usable file paths and filter supported types first
     prepared_files = []
@@ -140,5 +151,6 @@ def build_rag_tool_from_files(file_paths):
                 #source=source_name
             )
             print(f"[SUCCESS] Added to RAG: {source_name}")
-
+    with _rag_tool_cache_lock:
+        _rag_tool_cache[cache_key] = rag_tool
     return rag_tool

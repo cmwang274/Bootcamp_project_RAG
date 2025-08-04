@@ -132,56 +132,56 @@ crew = Crew(
     concurrent=True  # Enable concurrent execution of agents/tasks
 )
 
-def get_relevant_agents_and_tasks(user_input):
-    agents = []
-    tasks = []
-    input_lower = user_input.lower()
-    # Use sets of keywords/phrases for each agent
-    companion_keywords = [
-        "listen", "support", "feel", "emotion", "burnt out", "overwhelm", "talk", "vent", "stressed", "anxious", "sad", "frustrated"
-    ]
-    planner_keywords = [
-        "plan", "organize", "routine", "schedule", "workweek", "stress relief", "time management", "productivity", "breaks", "habits", "structure"
-    ]
-    mentor_keywords = [
-        "mentor", "colleague", "ally", "help others", "guidance", "coach", "advice for others", "team", "peer", "subordinate"
-    ]
-    resource_keywords = [
-        "resource", "guide", "article", "link", "tips", "reference", "information", "read", "learn", "material"
-    ]
-    def keyword_match(keywords):
-        return any(re.search(rf"\\b{re.escape(word)}\\b", input_lower) for word in keywords)
-    if keyword_match(companion_keywords):
-        agents.append(agent_companion)
-        tasks.append(task_companion)
-    if keyword_match(planner_keywords):
-        agents.append(agent_planner)
-        tasks.append(task_planner)
-    if keyword_match(mentor_keywords):
-        agents.append(agent_mentor)
-        tasks.append(task_mentor)
-    if keyword_match(resource_keywords):
-        agents.append(agent_resource)
-        tasks.append(task_resource)
-    # If no match, default to companion agent for general support
-    if not agents:
-        agents.append(agent_companion)
-        tasks.append(task_companion)
-    # Always include coordinator
-    agents.append(agent_coordinator)
-    tasks.append(task_coordinator)
-    return agents, tasks
+def route_to_agent(prompt):
+    lower_prompt = prompt.lower()
+    agent_keywords = {
+        "Companion": ["listen", "support", "feel", "emotion", "burnt out", "overwhelm", "talk", "vent", "stressed", "anxious", "sad", "frustrated"],
+        "Planner": ["plan", "organize", "routine", "schedule", "workweek", "stress relief", "time management", "productivity", "breaks", "habits", "structure"],
+        "Mentor": ["mentor", "colleague", "ally", "help others", "guidance", "coach", "advice for others", "team", "peer", "subordinate"],
+        "Resource": ["resource", "guide", "article", "link", "tips", "reference", "information", "read", "learn", "material"]
+    }
+    for agent, keywords in agent_keywords.items():
+        if any(word in lower_prompt for word in keywords):
+            return agent
+    # Instead of defaulting to Coordinator, return None if no match
+    return None
 
 # Streaming response generator using CrewAI
+AGENT_TASK_MAP = {
+    "Companion": (agent_companion, task_companion),
+    "Planner": (agent_planner, task_planner),
+    "Mentor": (agent_mentor, task_mentor),
+    "Resource": (agent_resource, task_resource),
+    "Coordinator": (agent_coordinator, task_coordinator)
+}
+
 def response_generator_from_crewai(user_input):
     import streamlit as st
-    # Gather chat history
     history = st.session_state.get("messages", [])
-    # Format history as context string
     context_str = "\n".join([
         f"{msg['role'].capitalize()}: {msg['content']}" for msg in history
     ])
-    agents, tasks = get_relevant_agents_and_tasks(user_input)
+    # Try to infer agent from previous response if current input is unclear
+    selected = route_to_agent(user_input)
+    if selected is None and history:
+        # Look for last assistant response and infer agent type from its section heading
+        last_response = next((msg['content'] for msg in reversed(history) if msg['role'] == 'assistant'), None)
+        if last_response:
+            # Simple heading-based inference
+            if "Emotional Support" in last_response:
+                selected = "Companion"
+            elif "Actionable Plan" in last_response:
+                selected = "Planner"
+            elif "Mentoring Tips" in last_response:
+                selected = "Mentor"
+            elif "Recommended Resources" in last_response:
+                selected = "Resource"
+    if selected is None:
+        yield "Sorry, I couldn't determine which type of support you need. Could you clarify if you want emotional support, planning help, mentoring advice, or resources? "
+        return
+    # Only run the relevant agent/task
+    agents = [AGENT_TASK_MAP[selected][0]]
+    tasks = [AGENT_TASK_MAP[selected][1]]
     crew = Crew(
         agents=agents,
         tasks=tasks,
@@ -189,7 +189,5 @@ def response_generator_from_crewai(user_input):
         concurrent=True
     )
     output = crew.kickoff(inputs={"topic": user_input, "history": context_str})
-    result_text = output.raw  # <-- this is the actual string result
-    for word in result_text.split():
+    for word in output.raw.split():
         yield word + " "
-    # No time.sleep
