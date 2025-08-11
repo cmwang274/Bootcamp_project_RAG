@@ -94,31 +94,31 @@ agent_coordinator = Agent(
 ###Tasks
 
 task_companion = Task(
-    description="Offer empathetic support and simple advice for someone feeling burnt out or has some mental wellness challenges. Always base your support and advice on the user's input topic: {topic}.",
-    expected_output="In addition to other responses from other agents, begin with a few supportive messages acknowledging their feelings and a few gentle coping suggestions to cope with workplace stress that are resulted from the underlying workplace struggle when being asked by the affected party the following: {topic}",
+    description="Offer empathetic support and simple advice for someone feeling burnt out or has some mental wellness challenges. Always base your support and advice on the user's input topic: {topic}. Keep your response concise and under 100 words.",
+    expected_output="Begin with a few supportive messages acknowledging their feelings and a few gentle coping suggestions to cope with workplace stress. Keep the response under 100 words.",
     agent=agent_companion,
 )
 
 task_planner = Task(
-    description="Create a step-by-step plan to help someone organise their workweek to reduce stress or their mental wellness challenges. Always base your plan on the user's input topic: {topic}.",
-    expected_output="In addition to other responses from other agents, begin in a new paragraph to include a practical, clear, easy-to-follow plan with healthy habits, breaks, and boundary-setting ideas,to reduce workplace stress that are resulted from the underlying workplace struggle when being asked by the affected party the following: {topic}.",
+    description="Create a step-by-step plan to help someone organise their workweek to reduce stress or their mental wellness challenges. Always base your plan on the user's input topic: {topic}. Keep your response concise and under 100 words.",
+    expected_output="Include a practical, clear, easy-to-follow plan with healthy habits, breaks, and boundary-setting ideas. Keep the response under 100 words.",
     agent=agent_planner,
 )
 
 task_mentor = Task(
-    description="Suggest kind, appropriate ways to support a colleague who may be overwhelmed or has some mental wellness challenges. Always base your suggestions on the user's input topic: {topic}.",
-    expected_output="In addition to other responses from other agents, begin in a new paragraph to include tips on how to approach, listen, and offer help to someone struggling or has some mental wellness challenges, workplace stress that are resulted from the underlying workplace struggle when being asked by the affected party the following: {topic}.",
+    description="Suggest kind, appropriate ways to support a colleague who may be overwhelmed or has some mental wellness challenges. Always base your suggestions on the user's input topic: {topic}. Keep your response concise and under 100 words.",
+    expected_output="Include tips on how to approach, listen, and offer help to someone struggling. Keep the response under 100 words.",
     agent=agent_mentor,
 )
 
 task_resource = Task(
-    description="Look up trustworthy resources not just from related to managing workplace stress or burnout. Always base your recommendations on the user's input topic: {topic}.",
-    expected_output="In addition to other responses from other agents, begin in a new paragraph to include not more than 2 useful links or summaries of guides that can help the user take practical steps, to reduce workplace stress that are resulted from the underlying workplace struggle when being asked by the affected party the following: {topic}.",
+    description="Look up trustworthy resources related to managing workplace stress or burnout. Always base your recommendations on the user's input topic: {topic}. Keep your response concise and under 100 words.",
+    expected_output="Include not more than 2 useful links or summaries of guides that can help the user take practical steps. Keep the response under 100 words.",
     agent=agent_resource,
 )
 
 task_coordinator = Task(
-    description="Combine the insights from emotional support, planning steps, mentoring tips, and trusted resources into one final output.",
+    description="Combine the insights from emotional support, planning steps, mentoring tips, and trusted resources into one final output. Keep the entire response under 300 words.",
     expected_output="A summarised version of a cohesive answer that weaves together emotional empathy, actionable plan, handy tips, and resource links. Structure the answer into clear sections with headings: 'Emotional Support', 'Actionable Plan', 'Mentoring Tips', and 'Recommended Resources'. The answer should be within 300 word count.",
     agent=agent_coordinator,
     context=[task_companion, task_planner, task_mentor, task_resource],
