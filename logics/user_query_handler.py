@@ -1,12 +1,11 @@
 # Common imports
 import os
 from dotenv import load_dotenv
+load_dotenv('.env')
 from openai import OpenAI
 import tiktoken
 import time
 import re
-
-load_dotenv('.env')
 
 # Pass the API Key to the OpenAI Client and Exa.ai
 openai_api_key = os.getenv('OPENAI_API_KEY')
@@ -24,7 +23,7 @@ from content.driver import download_drive_files, build_rag_tool_from_files
 #this is the google drive - https://drive.google.com/drive/folders/13BJY5qfprzXXK_MGnN06Jz_KWnJqOZZz
 #this is the json file downloaded from google cloud
 FOLDER_ID = "1B8fvzo_LiLbXDp3Y2vq8yWHOOH_V-BD-"
-SERVICE_ACCOUNT_PATH = "AI_project.json"
+SERVICE_ACCOUNT_PATH = os.getenv("GOOGLE_SERVICE_ACCOUNT_PATH")
 
 # Step 1: Download files
 downloaded_files = download_drive_files(FOLDER_ID, SERVICE_ACCOUNT_PATH)

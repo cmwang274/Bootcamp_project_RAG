@@ -9,11 +9,16 @@ from PyPDF2.errors import PdfReadError
 from docx import Document
 from crewai_tools import RagTool
 import threading
+from dotenv import load_dotenv
+
+load_dotenv('.env')
 
 
-def download_drive_files(folder_id, service_account_path, output_dir="downloaded_files"):
+def download_drive_files(folder_id, service_account_path=None, output_dir="downloaded_files"):
     SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
-    
+    # Read service account path from .env if not provided
+    if service_account_path is None:
+        service_account_path = os.getenv("GOOGLE_SERVICE_ACCOUNT_PATH")
     credentials = service_account.Credentials.from_service_account_file(
         service_account_path, scopes=SCOPES)
 
