@@ -17,6 +17,17 @@ from crewai_tools import WebsiteSearchTool
 from crewai_tools import EXASearchTool
 import sys, os
 
+##Add
+import sys
+import pysqlite3
+sys.modules["sqlite3"] = pysqlite3
+
+# Now, continue using sqlite3 as usual.
+import sqlite3
+conn = sqlite3.connect("your.db")
+
+##End
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from content.driver import download_drive_files, build_rag_tool_from_files
 
@@ -190,3 +201,4 @@ def response_generator_from_crewai(user_input):
     output = crew.kickoff(inputs={"topic": user_input, "history": context_str})
     for word in output.raw.split():
         yield word + " "
+
